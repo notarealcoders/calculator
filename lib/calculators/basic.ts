@@ -1,16 +1,25 @@
-export const evaluateBasicExpression = (expression: string): number => {
+import { tokenize } from './basic/tokenizer';
+import { parseToRPN } from './basic/parser';
+import { evaluateRPN } from './basic/evaluator';
+export { formatNumber } from './basic/formatter';
+
+export function evaluateBasicExpression(expression: string): number {
   try {
-    // Remove any unsafe characters
-    const sanitizedExpression = expression.replace(/[^0-9+\-*/().%]/g, '');
-    return Function(`'use strict'; return (${sanitizedExpression})`)();
+    const { tokens, error } = tokenize(expression);
+    if (error) throw new Error(error);
+    
+    const rpn = parseToRPN(tokens);
+    const result = evaluateRPN(rpn);
+    
+    if (!isFinite(result)) {
+      throw new Error('Result is not a finite number');
+    }
+    
+    return result;
   } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Calculation error: ${error.message}`);
+    }
     throw new Error('Invalid expression');
   }
-};
-
-export const formatNumber = (num: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    maximumFractionDigits: 8,
-    minimumFractionDigits: 0,
-  }).format(num);
-};
+}
